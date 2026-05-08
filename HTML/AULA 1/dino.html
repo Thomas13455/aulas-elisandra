@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Dino Runner - O Jogo do Dinossauro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background: linear-gradient(145deg, #2b2b3a 0%, #1e1e2a 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Courier New', 'VT323', monospace;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: #f7f7f0;
+            border-radius: 32px;
+            padding: 20px 25px 25px 25px;
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+        }
+
+        .info-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-top: 18px;
+            padding: 8px 16px;
+            background: #e8e6d5;
+            border-radius: 60px;
+            font-weight: bold;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .score-box {
+            background: #2c2c28;
+            color: #f5f0c3;
+            padding: 5px 15px;
+            border-radius: 40px;
+            font-size: 1.5rem;
+            letter-spacing: 2px;
+            font-family: monospace;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.4), 0 2px 2px rgba(255,255,200,0.6);
+        }
+
+        .score-box span {
+            font-size: 0.85rem;
+            color: #cdc9a5;
+            margin-right: 8px;
+        }
+
+        .controls {
+            background: #fef7cf;
+            padding: 5px 15px;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            color: #3d3b2b;
+            display: flex;
+            gap: 20px;
+        }
+
+        .controls kbd {
+            background: #2c2c28;
+            color: #ffea9e;
+            padding: 3px 8px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin: 0 3px;
+            box-shadow: inset 0 1px 0 #5a5a4e, 0 1px 0 #111;
+        }
+
+        .restart-btn {
+            background: #4b6e3b;
+            border: none;
+            font-family: inherit;
+            font-weight: bold;
+            font-size: 0.9rem;
+            padding: 5px 16px;
+            border-radius: 40px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            box-shadow: 0 3px 0 #2b4020;
+        }
+
+        .restart-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 #2b4020;
+        }
+
+        @media (max-width: 550px) {
+            .controls {
+                font-size: 0.7rem;
+                gap: 8px;
+            }
+            .score-box {
+                font-size: 1.2rem;
+            }
+            .game-container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div>
+    <div class="game-container">
+        <canvas id="gameCanvas" width="900" height="260"></canvas>
+        <div class="info-panel">
+            <div class="score-box">
+                <span>🏆 PONTOS</span> <span id="scoreValue">0</span>
+            </div>
+            <div class="controls">
+                <span>🐾 <kbd>ESPACO</kbd> ou <kbd>CLIQUE</kbd> → PULAR</span>
+                <span>🔄 <kbd>R</kbd> → REINICIAR</span>
+            </div>
+            <button class="restart-btn" id="restartButton">▶ JOGAR NOVAMENTE</button>
+        </div>
+    </div>
+    <div style="text-align: center; margin-top: 20px; font-size: 13px; color: #aaa9b3; font-family: monospace;">
+        ⚡ DINO RUNNER | DESVIE DOS CACTOS
+    </div>
+</div>
+
+<script>
+    (function() {
+        // ---------- ELEMENTOS ----------
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreSpan = document.getElementById('scoreValue');
+
+        // ---------- DIMENSÕES FIXAS ----------
+        const CANVAS_W = 900;
+        const CANVAS_H = 260;
+        canvas.width = CANVAS_W;
+        canvas.height = CANVAS_H;
+
+        // ---------- CHÃO ----------
+        const GROUND_Y = CANVAS_H - 38;    // posição Y do topo do chão (solo)
+        const GROUND_HEIGHT = 8;            // espessura visual do chão
+        
+        // ---------- PARÂMETROS DO DINOSSAURO ----------
+        const DINO_W = 28;
+        const DINO_H = 34;
+        const DINO_X = 70;                  // posição fixa horizontal
+        
+        // Variáveis do dinossauro
+        let dinoY = GROUND_Y - DINO_H;      // posição Y inicial (no chão)
+        let dinoVy = 0;
+        let isJumping = false;
+        const GRAVITY = 0.9;
+        const JUMP_FORCE = -11.5;
+        
+        // ---------- OBSTÁCULO (CACTO) ----------
+        let cactus = {
+            x: CANVAS_W,
+            y: GROUND_Y - 28,       // altura do cacto ~28px
+            width: 18,
+            height: 28,
+            active: false
+        };
+        
+        // Parâmetros do cacto
+        let nextCactusDelay = 0;        // contador de frames até spawnar próximo cacto
+        let gameSpeed = 5.2;            // velocidade base
+        let baseSpeed = 5.2;
+        let score = 0;
+        let frameCounter = 0;
+        
+        // Estado do jogo
+        let gameRunning = true;
+        let gameOverFlag = false;
+        let animationId = null;
+        
+        // ---------- AJUSTES VISUAIS / ANIMAÇÃO ----------
+        let dinoLegState = 0;      // para animação das perninhas (alterna quando no chão)
+        let legTimer = 0;
+        
+        // ---------- FUNÇÕES AUXILIARES DE COLISÃO (AABB) ----------
+        function checkCollision(dinoRect, cactusRect) {
+            return (dinoRect.x < cactusRect.x + cactusRect.w &&
+                    dinoRect.x + dinoRect.w > cactusRect.x &&
+                    dinoRect.y < cactusRect.y + cactusRect.h &&
+                    dinoRect.y + dinoRect.h > cactusRect.y);
+        }
+        
+        // ---------- REINICIAR JOGO COMPLETO ----------
+        function restartGame() {
+            gameRunning = true;
+            gameOverFlag = false;
+            score = 0;
+            updateScoreDisplay();
+            gameSpeed = baseSpeed;
+            dinoY = GROUND_Y - DINO_H;
+            dinoVy = 0;
+            isJumping = false;
+            frameCounter = 0;
+            nextCactusDelay = 25;   // pequeno delay antes de aparecer o primeiro cacto
+            cactus.active = false;
+            cactus.x = CANVAS_W;
+            
+            // remove qualquer estado pendente
+            if (animationId) cancelAnimationFrame(animationId);
+            gameLoop();
+        }
+        
+        // ---------- ATUALIZAR UI DA PONTUAÇÃO ----------
+        function updateScoreDisplay() {
+            scoreSpan.innerText = Math.floor(score);
+        }
+        
+        // ---------- LÓGICA DE PULO ----------
+        function jump() {
+            if (!gameRunning) return;
+            // só pode pular se estiver no chão (dinoY >= (GROUND_Y - DINO_H - 0.5))
+            if (dinoY >= GROUND_Y - DINO_H - 0.5 && !isJumping) {
+                dinoVy = JUMP_FORCE;
+                isJumping = true;
+                // efeito sonoro silencioso (só visual)
+            }
+        }
+        
+        // ---------- SPAWN DE CACTOS (controle por atraso) ----------
+        function trySpawnCactus() {
+            if (!gameRunning) return;
+            if (!cactus.active && nextCactusDelay <= 0) {
+                // define tamanho e altura variada para dar charme
+                let cactusType = Math.floor(Math.random() * 3);  // 0,1,2
+                let cactusW = 15 + (cactusType === 1 ? 5 : 0);
+                let cactusH = 26 + (cactusType === 2 ? 6 : 0);
+                cactus.width = cactusW;
+                cactus.height = cactusH;
+                cactus.y = GROUND_Y - cactusH;
+                cactus.x = CANVAS_W;
+                cactus.active = true;
+                
+                // delay aleatório entre 45 e 85 frames para o próximo cacto
+                nextCactusDelay = 50 + Math.floor(Math.random() * 50);
+            } else if (nextCactusDelay > 0) {
+                nextCactusDelay--;
+            }
+        }
+        
+        // ---------- ATUALIZA FÍSICA, MOVIMENTOS E PONTUAÇÃO ----------
+        function updateGame() {
+            if (!gameRunning) return;
+            
+            // 1. Física do dinossauro
+            dinoVy += GRAVITY;
+            dinoY += dinoVy;
+            
+            // limite do chão
+            if (dinoY >= GROUND_Y - DINO_H) {
+                dinoY = GROUND_Y - DINO_H;
+                dinoVy = 0;
+                isJumping = false;
+            }
+            // limite do topo (evita voar)
+            if (dinoY < 0) {
+                dinoY = 0;
+                if (dinoVy < 0) dinoVy = 0;
+            }
+            
+            // 2. Animação das pernas (apenas quando não pula)
+            if (!isJumping && gameRunning) {
+                legTimer++;
+                if (legTimer > 8) {
+                    legTimer = 0;
+                    dinoLegState = (dinoLegState + 1) % 4;
+                }
+            } else {
+                legTimer = 0;
+                dinoLegState = 0;
+            }
+            
+            // 3. Atualização do cacto
+            if (cactus.active) {
+                cactus.x -= gameSpeed;
+                // quando sai da tela, desativa e soma pontos
+                if (cactus.x + cactus.width < 0) {
+                    cactus.active = false;
+                    // pontuação baseada no cacto ultrapassado
+                    let pointsEarned = 10 + Math.floor(gameSpeed - baseSpeed) * 1.5;
+                    score += pointsEarned;
+                    updateScoreDisplay();
+                    
+                    // aumenta a velocidade gradualmente a cada 150 pontos
+                    let newSpeed = baseSpeed + Math.floor(score / 380);
+                    gameSpeed = Math.min(newSpeed, 12.5);
+                }
+            }
+            
+            // 4. Tentar gerar novo cacto (se não houver ativo)
+            trySpawnCactus();
+            
+            // 5. COLISÃO (usando hitbox precisa)
+            if (cactus.active) {
+                const dinoRect = {
+                    x: DINO_X + 3,          // ajuste fino para colisão mais justa
+                    y: dinoY + 2,
+                    w: DINO_W - 6,
+                    h: DINO_H - 4
+                };
+                const cactusRect = {
+                    x: cactus.x + 2,
+                    y: cactus.y + 2,
+                    w: cactus.width - 3,
+                    h: cactus.height - 3
+                };
+                
+                if (checkCollision(dinoRect, cactusRect)) {
+                    gameRunning = false;
+                    gameOverFlag = true;
+                }
+            }
+            
+            // 6. Incremento de pontuação passiva (sobreviver dá pontos)
+            frameCounter++;
+            if (frameCounter % 12 === 0 && gameRunning) {
+                score += 1;
+                updateScoreDisplay();
+                // atualiza velocidade conforme pontuação mesmo sem passar cacto
+                let speedByScore = baseSpeed + Math.floor(score / 420);
+                gameSpeed = Math.min(speedByScore, 12.8);
+            }
+        }
+        
+        // ---------- DESENHO DE TUDO (ESTILO RETRO + DETALHES) ----------
+        function draw() {
+            ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+            
+            // --- CÉU GRADIENTE SUTIL ---
+            const gradSky = ctx.createLinearGradient(0, 0, 0, GROUND_Y - 20);
+            gradSky.addColorStop(0, "#fcf9ea");
+            gradSky.addColorStop(1, "#f4efcf");
+            ctx.fillStyle = gradSky;
+            ctx.fillRect(0, 0, CANVAS_W, GROUND_Y - 5);
+            
+            // --- SOL SIMPLES (efeito) ---
+            ctx.beginPath();
+            ctx.arc(780, 50, 28, 0, Math.PI * 2);
+            ctx.fillStyle = "#FFE68F";
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(780, 50, 24, 0, Math.PI * 2);
+            ctx.fillStyle = "#FFD966";
+            ctx.fill();
+            
+            // --- CHÃO COM TEXTURA ---
+            ctx.fillStyle = "#8B6B4D";
+            ctx.fillRect(0, GROUND_Y - 5, CANVAS_W, 8);
+            ctx.fillStyle = "#C4A27A";
+            ctx.fillRect(0, GROUND_Y - 2, CANVAS_W, 6);
+            // sombra do chão
+            ctx.fillStyle = "#6F4F2E";
+            ctx.fillRect(0, GROUND_Y + 1, CANVAS_W, 4);
+            // detalhes (graminhas)
+            ctx.fillStyle = "#5F8745";
+            for (let i = 0; i < 12; i++) {
+                let xGrass = (frameCounter * 0.8 + i * 73) % CANVAS_W;
+                ctx.fillRect(xGrass, GROUND_Y - 7, 2, 6);
+            }
+            
+            // --- DESENHO DO CACTOS (estilo espinhoso) ---
+            if (cactus.active) {
+                const cactusX = cactus.x;
+                const cactusY = cactus.y;
+                ctx.fillStyle = "#2F6B2F";
+                ctx.shadowBlur = 0;
+                // corpo principal
+                ctx.fillRect(cactusX, cactusY, cactus.width, cactus.height);
+                ctx.fillStyle = "#1D4D1D";
+                ctx.fillRect(cactusX + 2, cactusY - 4, cactus.width - 4, 6);
+                ctx.fillStyle = "#3B873B";
+                for (let i = 0; i < 3; i++) {
+                    ctx.fillRect(cactusX + 3 + i * 4, cactusY + 5, 2, 7);
+                    ctx.fillRect(cactusX + 2 + i * 5, cactusY + 14, 2, 6);
+                }
+                ctx.fillStyle = "#F5C542";
+                ctx.fillRect(cactusX + cactus.width - 4, cactusY + 8, 3, 5);
+                // olhos no cacto? não, mas dá um detalhe pontiagudo
+                ctx.fillStyle = "#A55D2A";
+                ctx.fillRect(cactusX + cactus.width - 7, cactusY - 2, 4, 4);
+            }
+            
+            // --- DINOSSAURO (mais carismático) ---
+            // corpo principal (verde escuro)
+            ctx.fillStyle = "#3A5C2E";
+            ctx.shadowColor = "rgba(0,0,0,0.2)";
+            ctx.shadowBlur = 2;
+            ctx.fillRect(DINO_X, dinoY, DINO_W, DINO_H);
+            // barriga clara
+            ctx.fillStyle = "#83A653";
+            ctx.fillRect(DINO_X + 4, dinoY + 12, DINO_W - 12, DINO_H - 16);
+            // olho grande
+            ctx.fillStyle = "#FFFFFF";
+            ctx.beginPath();
+            ctx.arc(DINO_X + DINO_W - 7, dinoY + 12, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#0F0F0F";
+            ctx.beginPath();
+            ctx.arc(DINO_X + DINO_W - 8, dinoY + 11, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#FFFFFF";
+            ctx.beginPath();
+            ctx.arc(DINO_X + DINO_W - 9.5, dinoY + 9, 1.2, 0, Math.PI * 2);
+            ctx.fill();
+            // sobrancelha (expressão determinada)
+            ctx.fillStyle = "#2B2B1A";
+            ctx.fillRect(DINO_X + DINO_W - 13, dinoY + 7, 7, 2);
+            
+            // crista / dorso
+            ctx.fillStyle = "#2C5420";
+            for (let i = 0; i < 4; i++) {
+                ctx.fillRect(DINO_X + 3 + i * 6, dinoY - 3, 3, 6);
+            }
+            
+            // pernas animadas (alternam conforme legState)
+            ctx.fillStyle = "#2F5422";
+            let legOffset = 0;
+            if (!isJumping && dinoLegState >= 2) legOffset = 5;
+            else if (!isJumping && dinoLegState === 1) legOffset = 2;
+            else legOffset = 0;
+            
+            ctx.fillRect(DINO_X + 5, dinoY + DINO_H - 8, 6, 9);
+            ctx.fillRect(DINO_X + 15, dinoY + DINO_H - 8 + (legOffset * 0.6), 6, 9);
+            // pata traseira movimento
+            ctx.fillRect(DINO_X - 3, dinoY + DINO_H - 6, 6, 7);
+            // rabo
+            ctx.fillStyle = "#3A642A";
+            ctx.fillRect(DINO_X - 12, dinoY + DINO_H - 12, 10, 6);
+            
+            // --- partículas ao correr (efeito poeira) ---
+            if (gameRunning && !isJumping && cactus.active) {
+                ctx.fillStyle = "rgba(100,70,40,0.5)";
+                let dustX = DINO_X - 5;
+                let dustY = dinoY + DINO_H - 4;
+                for (let i = 0; i < 3; i++) {
+                    ctx.beginPath();
+                    ctx.arc(dustX - i * 3, dustY + (frameCounter % 8) / 2, 2 - i * 0.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            
+            ctx.shadowBlur = 0;
+            
+            // --- MARCADOR DE GAME OVER ---
+            if (!gameRunning && gameOverFlag) {
+                ctx.font = "bold 34px 'Courier New', monospace";
+                ctx.fillStyle = "#3A2819";
+                ctx.shadowBlur = 0;
+                ctx.fillText("☠️ GAME OVER", CANVAS_W/2 - 125, CANVAS_H/2 - 30);
+                ctx.font = "18px monospace";
+                ctx.fillStyle = "#5D3A1A";
+                ctx.fillText("pressione [R] ou clique em REINICIAR", CANVAS_W/2 - 175, CANVAS_H/2 + 25);
+            }
+            
+            // instrução rápida
+            if (gameRunning && frameCounter < 80) {
+                ctx.font = "14px monospace";
+                ctx.fillStyle = "#7F6139";
+                ctx.fillText("💨 Pressione ESPAÇO ou clique no jogo para pular", 30, 45);
+            }
+            
+            // efeito velocidade (linhas no chão)
+            ctx.fillStyle = "#E5D58B";
+            for (let i = 0; i < 6; i++) {
+                let lineX = (frameCounter * gameSpeed + i * 80) % CANVAS_W;
+                ctx.fillRect(lineX, GROUND_Y - 3, 20, 3);
+            }
+            
+            // Score extra dentro do canvas decorativo
+            ctx.font = "bold 19px 'Courier New'";
+            ctx.fillStyle = "#3A3A2A";
+            ctx.fillText("⚡ " + Math.floor(score), CANVAS_W - 100, 48);
+            ctx.font = "12px monospace";
+            ctx.fillStyle = "#867E55";
+            ctx.fillText("VEL: " + gameSpeed.toFixed(1), CANVAS_W - 90, 76);
+        }
+        
+        // ---------- LOOP PRINCIPAL ----------
+        function gameLoop() {
+            updateGame();
+            draw();
+            animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        // ---------- EVENTOS DE CONTROLE (TECLADO E CLICK/TOQUE) ----------
+        function handleKeyDown(e) {
+            const key = e.key;
+            if (key === ' ' || key === 'Space' || key === 'ArrowUp') {
+                e.preventDefault();
+                if (!gameRunning && gameOverFlag) {
+                    restartGame();
+                } else {
+                    jump();
+                }
+            }
+            if (key === 'r' || key === 'R') {
+                e.preventDefault();
+                restartGame();
+            }
+        }
+        
+        function handleCanvasClick(e) {
+            e.preventDefault();
+            if (!gameRunning && gameOverFlag) {
+                restartGame();
+            } else {
+                jump();
+            }
+        }
+        
+        // garantir que eventos touch também funcionem (mobile)
+        function handleTouchStart(e) {
+            e.preventDefault();
+            if (!gameRunning && gameOverFlag) {
+                restartGame();
+            } else {
+                jump();
+            }
+        }
+        
+        // ---------- INICIALIZAÇÃO ----------
+        function init() {
+            restartGame();      // inicia com delay e jogo ativo
+            window.addEventListener('keydown', handleKeyDown);
+            canvas.addEventListener('click', handleCanvasClick);
+            canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+            document.getElementById('restartButton').addEventListener('click', () => {
+                restartGame();
+            });
+            // pequeno ajuste para evitar pulo acidental com espaço no botão
+            const restartBtn = document.getElementById('restartButton');
+            restartBtn.addEventListener('keydown', (e) => e.stopPropagation());
+        }
+        
+        init();
+    })();
+</script>
+</body>
+</html>

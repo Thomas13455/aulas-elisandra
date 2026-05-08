@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Formulário de Endereço de Entrega</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(145deg, #e0eafc 0%, #cfdef3 100%);
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem 1.5rem;
+        }
+
+        /* Container principal com efeito de vidro suave */
+        .form-container {
+            max-width: 850px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.96);
+            border-radius: 2rem;
+            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.05);
+            backdrop-filter: blur(0px);
+            transition: all 0.2s ease;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        /* cabeçalho decorativo opcional */
+        .form-header {
+            background: #1e3c72;
+            background: linear-gradient(135deg, #0f2b3d, #1b4a6e);
+            padding: 1.2rem 2rem;
+            color: white;
+        }
+
+        .form-header h1 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-header h1:before {
+            content: "📍";
+            font-size: 1.8rem;
+        }
+
+        /* formulário com padding interno */
+        form {
+            padding: 1.8rem 2rem 2rem 2rem;
+        }
+
+        /* Estilo da tabela - clean e responsiva */
+        .endereco-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 1rem;
+        }
+
+        /* Título da tabela (caption) estilizado como um subtítulo elegante */
+        .endereco-table caption {
+            font-size: 1.55rem;
+            font-weight: 700;
+            color: #1e4663;
+            background: #f0f7ff;
+            padding: 1rem 0.8rem;
+            margin-bottom: 1rem;
+            border-radius: 1.2rem;
+            caption-side: top;
+            text-align: center;
+            letter-spacing: -0.2px;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.02), 0 2px 4px rgba(0,0,0,0.02);
+            border: 1px solid #e2edf7;
+        }
+
+        /* células da tabela */
+        .endereco-table td {
+            padding: 0.85rem 0.5rem;
+            vertical-align: middle;
+            border-bottom: 1px solid #e9edf2;
+        }
+
+        /* rótulos: alinhados à direita em telas maiores */
+        .endereco-table td:first-child {
+            font-weight: 600;
+            color: #1f3b4c;
+            width: 38%;
+            padding-right: 1rem;
+            text-align: right;
+            letter-spacing: -0.2px;
+        }
+
+        .endereco-table td:last-child {
+            width: 62%;
+            text-align: left;
+        }
+
+        /* estilos para inputs, select */
+        input, select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            font-size: 0.95rem;
+            font-family: inherit;
+            border: 1.5px solid #dce3ec;
+            border-radius: 1.2rem;
+            background-color: #ffffff;
+            transition: all 0.2s ease;
+            outline: none;
+            color: #111;
+        }
+
+        input:focus, select:focus {
+            border-color: #2c7da0;
+            box-shadow: 0 0 0 3px rgba(44, 125, 160, 0.2);
+        }
+
+        input:hover, select:hover {
+            border-color: #90b4ce;
+        }
+
+        /* placeholder mais suave */
+        input::placeholder {
+            color: #a3bbd1;
+            font-weight: 400;
+            font-size: 0.85rem;
+        }
+
+        /* botões */
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 0.5rem;
+        }
+
+        button {
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 0.75rem 1.8rem;
+            border: none;
+            border-radius: 3rem;
+            cursor: pointer;
+            transition: 0.2s ease-in-out;
+            font-family: inherit;
+            letter-spacing: 0.3px;
+            background-color: #eef2f8;
+            color: #1e3c4a;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        button[type="submit"] {
+            background: #1e6f5c;
+            color: white;
+            box-shadow: 0 4px 10px rgba(30, 111, 92, 0.25);
+        }
+
+        button[type="submit"]:hover {
+            background: #0f5a49;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 18px rgba(30, 111, 92, 0.3);
+        }
+
+        button[type="reset"] {
+            background: #eef2f8;
+            color: #2c3e50;
+            border: 1px solid #cbdbe2;
+        }
+
+        button[type="reset"]:hover {
+            background: #e2e8f0;
+            transform: translateY(-2px);
+            border-color: #a1b3c9;
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        /* mensagem de feedback */
+        .feedback-message {
+            margin-top: 1.6rem;
+            padding: 0.8rem 1.2rem;
+            border-radius: 1.8rem;
+            font-size: 0.9rem;
+            text-align: center;
+            background: #f8fafc;
+            border-left: 5px solid #2c7da0;
+            color: #1f4e6e;
+            transition: all 0.2s;
+        }
+
+        .feedback-message.error {
+            background: #fff4f0;
+            border-left-color: #e76f51;
+            color: #b43b0b;
+        }
+
+        .feedback-message.success {
+            background: #e6f9f0;
+            border-left-color: #2a9d8f;
+            color: #1b6b5e;
+        }
+
+        /* ajuste responsivo: em telas pequenas os rótulos ficam acima dos campos */
+        @media (max-width: 620px) {
+            .form-container {
+                border-radius: 1.5rem;
+            }
+            form {
+                padding: 1.2rem;
+            }
+            .endereco-table, .endereco-table tbody, .endereco-table tr, .endereco-table td {
+                display: block;
+                width: 100%;
+            }
+            .endereco-table tr {
+                margin-bottom: 1rem;
+                border-bottom: 1px solid #e2edf2;
+                padding-bottom: 0.5rem;
+            }
+            .endereco-table td:first-child {
+                text-align: left;
+                width: 100%;
+                padding-bottom: 0.3rem;
+                font-weight: 700;
+                background: transparent;
+            }
+            .endereco-table td:last-child {
+                width: 100%;
+                padding-top: 0.2rem;
+                padding-left: 0;
+            }
+            .endereco-table caption {
+                font-size: 1.3rem;
+                margin-bottom: 0.8rem;
+            }
+            .button-group button {
+                flex: 1;
+                text-align: center;
+                justify-content: center;
+            }
+        }
+
+        /* ícone sutil para select */
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23365e7e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1rem;
+        }
+
+        /* campo número com largura menor opcional, mas mantém responsivo */
+        input#numero {
+            max-width: 100%;
+        }
+
+        footer {
+            font-size: 0.7rem;
+            text-align: center;
+            padding: 0.8rem 1rem;
+            background: #f7fafd;
+            color: #6b85a0;
+            border-top: 1px solid #e2edf2;
+        }
+        footer a {
+            color: #2c7da0;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="form-container">
+    <div class="form-header">
+        <h1>Entregas Seguras</h1>
+    </div>
+
+    <form id="enderecoForm" action="#" method="post">
+        <!-- Tabela dentro do formulário conforme solicitado -->
+        <table class="endereco-table">
+            <!-- TÍTULO da tabela: "informar o endereço de entrega" (caption) -->
+            <caption>📦 Informar o Endereço de Entrega</caption>
+
+            <!-- LINHA: Tipo de logradouro + BOTÃO SELECT (dropdown) -->
+            <tr>
+                <td><label for="tipoLogradouro">🏷️ Tipo de logradouro:</label></td>
+                <td>
+                    <select id="tipoLogradouro" name="tipoLogradouro" required>
+                        <option value="" disabled selected>— Selecione o tipo —</option>
+                        <option value="Rua">Rua</option>
+                        <option value="Avenida">Avenida</option>
+                        <option value="Alameda">Alameda</option>
+                        <option value="Travessa">Travessa</option>
+                        <option value="Rodovia">Rodovia</option>
+                        <option value="Praça">Praça</option>
+                        <option value="Estrada">Estrada</option>
+                        <option value="Viela">Viela</option>
+                    </select>
+                </td>
+            </tr>
+            <!-- LINHA: Logradouro (nome da via) -->
+            <tr>
+                <td><label for="logradouro">🏠 Logradouro:</label></td>
+                <td><input type="text" id="logradouro" name="logradouro" placeholder="Ex: das Flores, 15 de Novembro" autocomplete="off"></td>
+            </tr>
+            <!-- LINHA: Número -->
+            <tr>
+                <td><label for="numero">🔢 Número:</label></td>
+                <td><input type="text" id="numero" name="numero" placeholder="Nº, bloco, lote" autocomplete="off"></td>
+            </tr>
+            <!-- LINHA: Bairro -->
+            <tr>
+                <td><label for="bairro">🏘️ Bairro:</label></td>
+                <td><input type="text" id="bairro" name="bairro" placeholder="Centro, Jardim América..." autocomplete="off"></td>
+            </tr>
+            <!-- LINHA: CEP -->
+            <tr>
+                <td><label for="cep">✉️ CEP:</label></td>
+                <td><input type="text" id="cep" name="cep" placeholder="Ex: 01001-000 ou 12345678" autocomplete="off"></td>
+            </tr>
+            <!-- LINHA: Cidade -->
+            <tr>
+                <td><label for="cidade">🌆 Cidade:</label></td>
+                <td><input type="text" id="cidade" name="cidade" placeholder="São Paulo, Rio de Janeiro ..." autocomplete="off"></td>
+            </tr>
+            <!-- LINHA dos BOTÕES: Enviar e ao lado Limpar -->
+            <tr>
+                <td colspan="2" style="border-bottom: none; text-align: center; padding-top: 1.2rem;">
+                    <div class="button-group">
+                        <button type="submit">📨 Enviar</button>
+                        <button type="reset">🗑️ Limpar</button>
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Div para exibir mensagens de validação / sucesso -->
+        <div id="formFeedback" class="feedback-message">
+            Preencha os dados e clique em Enviar.
+        </div>
+    </form>
+    <footer>
+        ✅ Endereço de entrega | Campos com preenchimento obrigatório (exceto número? mas recomendamos todos)
+    </footer>
+</div>
+
+<script>
+    (function() {
+        const form = document.getElementById('enderecoForm');
+        const feedbackDiv = document.getElementById('formFeedback');
+
+        // Função para limpar mensagens (também usada no reset)
+        function clearFeedback() {
+            feedbackDiv.innerHTML = '📋 Preencha o endereço e clique em Enviar.';
+            feedbackDiv.className = 'feedback-message';
+        }
+
+        // Função para mostrar erro customizado
+        function showError(message) {
+            feedbackDiv.innerHTML = `⚠️ ${message}`;
+            feedbackDiv.className = 'feedback-message error';
+        }
+
+        // Função para mostrar sucesso com os dados preenchidos
+        function showSuccess(data) {
+            feedbackDiv.innerHTML = `✅ <strong>Endereço registrado com sucesso!</strong><br> 
+            📍 ${data.tipo} ${data.logradouro}, ${data.numero} - ${data.bairro}<br>
+            📮 CEP: ${data.cep} | 🏙️ ${data.cidade}`;
+            feedbackDiv.className = 'feedback-message success';
+        }
+
+        // Validar campos principais
+        function validateForm() {
+            // Obter elementos
+            const tipoSelect = document.getElementById('tipoLogradouro');
+            const tipoValue = tipoSelect.value;
+            const logradouroInput = document.getElementById('logradouro');
+            const logradouro = logradouroInput.value.trim();
+            const numeroInput = document.getElementById('numero');
+            const numero = numeroInput.value.trim();
+            const bairroInput = document.getElementById('bairro');
+            const bairro = bairroInput.value.trim();
+            const cepInput = document.getElementById('cep');
+            const cep = cepInput.value.trim();
+            const cidadeInput = document.getElementById('cidade');
+            const cidade = cidadeInput.value.trim();
+
+            // Validação: tipo de logradouro deve ser uma opção válida (diferente de vazio)
+            if (!tipoValue) {
+                showError('Por favor, selecione um tipo de logradouro (Rua, Avenida, etc).');
+                tipoSelect.focus();
+                return false;
+            }
+            // Logradouro obrigatório
+            if (logradouro === "") {
+                showError('O campo "Logradouro" é obrigatório. Informe o nome da via.');
+                logradouroInput.focus();
+                return false;
+            }
+            // Número (mesmo que opcional na regra, mas boa prática solicitar; conforme descrição, pede número)
+            if (numero === "") {
+                showError('Informe o número do imóvel. (Caso não tenha, digite "s/n")');
+                numeroInput.focus();
+                return false;
+            }
+            // Bairro obrigatório
+            if (bairro === "") {
+                showError('Preencha o bairro corretamente.');
+                bairroInput.focus();
+                return false;
+            }
+            // CEP obrigatório (formato livre, mas não vazio)
+            if (cep === "") {
+                showError('Digite o CEP para facilitar a entrega.');
+                cepInput.focus();
+                return false;
+            }
+            // Cidade obrigatória
+            if (cidade === "") {
+                showError('Informe o nome da cidade.');
+                cidadeInput.focus();
+                return false;
+            }
+
+            // Se tudo ok, retorna os dados para exibição
+            return {
+                tipo: tipoValue,
+                logradouro: logradouro,
+                numero: numero,
+                bairro: bairro,
+                cep: cep,
+                cidade: cidade
+            };
+        }
+
+        // Evento de SUBMIT: valida e exibe mensagem com dados (sem envio real)
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();  // Impede o reload/envio tradicional
+
+            const dadosValidados = validateForm();
+            if (dadosValidados) {
+                // Exibe os dados na área de sucesso
+                showSuccess(dadosValidados);
+                // Opcional: você pode também dar um scroll suave até a mensagem
+                feedbackDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                // NENHUM ENVIO REAL PARA O SERVIDOR – apenas simulação didática.
+                // Caso queira fazer submit real, basta remover o preventDefault e ajustar action, 
+                // mas conforme solicitado, apenas a interface com os botões.
+            }
+        });
+
+        // Evento de RESET: limpa os campos nativamente e também limpa a mensagem de feedback
+        form.addEventListener('reset', function(event) {
+            // O reset padrão vai restaurar os valores iniciais do form.
+            // Precisamos garantir que após o reset a mensagem seja limpa e o select fique na opção padrão.
+            // O reset nativo do form já redefinirá os valores, mas devido ao setTimeout garantimos que 
+            // o estado final após reset reflita a mensagem limpa.
+            setTimeout(() => {
+                clearFeedback();
+                // Adicional: garantir que o campo select fique com a primeira opção desabilitada (padrão)
+                // O reset nativo já faz isso porque a opção selected está definida no HTML.
+                // Porém, pequena garantia extra: se houver qualquer inconsistência, reaplicamos o estado visual.
+                const tipoSelect = document.getElementById('tipoLogradouro');
+                if (tipoSelect && tipoSelect.options[0]) {
+                    // Se o reset não restaurar por algum motivo bizarro, forçamos a opção padrão
+                    // Mas reset padrão já funciona perfeitamente. Deixamos apenas para máxima consistência.
+                    if (tipoSelect.value !== "") {
+                        // Em alguns casos específicos, mas o reset padrão já cuida, então é só estético
+                        // não interferir.
+                    }
+                }
+            }, 10);
+        });
+
+        // Tratamento adicional: quando clicar em Limpar (reset) também remove qualquer erro residual
+        // já garantido acima. Além disso, se o usuário preencher e clicar em limpar, tudo fica vazio.
+        // Para melhor experiência, ao clicar no botão limpar (reset) a mensagem volta a ser neutra.
+        // (já implementado)
+
+        // Opcional: detectar quando algum campo recebe foco e limpar mensagens de erro específicas
+        const allInputs = form.querySelectorAll('input, select');
+        allInputs.forEach(field => {
+            field.addEventListener('focus', function() {
+                if (feedbackDiv.classList.contains('error')) {
+                    // suavemente remove apenas o estilo de erro se o usuário começar a editar
+                    // mas não apaga dicas gerais
+                    if (feedbackDiv.innerHTML.includes('⚠️')) {
+                        feedbackDiv.innerHTML = '✏️ Corrigindo informações... Preencha todos os campos.';
+                        feedbackDiv.className = 'feedback-message';
+                    }
+                }
+            });
+        });
+    })();
+</script>
+</body>
+</html>
